@@ -2,6 +2,9 @@
 import os
 from typing import Any, Dict, List, Optional, Tuple, TypeVar, TypedDict
 from auto_gpt_plugin_template import AutoGPTPluginTemplate
+import subprocess
+import json
+import os
 
 
 PromptGenerator = TypeVar("PromptGenerator")
@@ -11,6 +14,12 @@ class Message(TypedDict):
     role: str
     content: str
 
+def executeCLICommand(command: str):
+    result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    print("Return code:", result.returncode)
+    print("Output:", result.stdout.strip())
+    print("Error:", result.stderr.strip())
 
 class AutoGPTCLIPlugin(AutoGPTPluginTemplate):
     """
@@ -23,26 +32,23 @@ class AutoGPTCLIPlugin(AutoGPTPluginTemplate):
         self._version = "0.1.0"
         self._description = "Auto-GPT CLI Plugin: Supercharge your Command-Line."
 
+        if os.name == 'posix':
+            self.cli_name = "Unix Shell"
+        elif os.name == 'nt':
+            self.cli_name = "Windows Shell"
+        else:
+            self.cli_name = "Shell"
+
     def post_prompt(self, prompt: PromptGenerator) -> PromptGenerator:
+        commandName = f"Execute {self.cli_name} Command"
         prompt.add_command(
-            "Send Email",
-            "send_email",
+            commandName,
+            "execute_shell_command",
             {
-                "to": "<to>",
-                "subject": "<subject>",
-                "body": "<body>"
+                "command": "<command>",
             },
-            send_email
+            executeCLICommand
         )
-        prompt.add_command(
-            "Read Emails",
-            "read_emails",
-            {
-                "imap_folder": "<imap_folder>",
-                "imap_search_command":
-                "<imap_search_criteria_command>"
-            },
-            read_emails)
         return prompt
 
     def can_handle_post_prompt(self) -> bool:
