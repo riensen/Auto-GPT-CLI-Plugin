@@ -17,9 +17,11 @@ class Message(TypedDict):
 def executeCLICommand(command: str):
     result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-    print("Return code:", result.returncode)
-    print("Output:", result.stdout.strip())
-    print("Error:", result.stderr.strip())
+    if result.stdout.strip():
+        return result.stdout.strip()
+    else:
+        return result.stderr.strip()
+
 
 class AutoGPTCLIPlugin(AutoGPTPluginTemplate):
     """
@@ -40,15 +42,15 @@ class AutoGPTCLIPlugin(AutoGPTPluginTemplate):
             self.cli_name = "Shell"
 
     def post_prompt(self, prompt: PromptGenerator) -> PromptGenerator:
-        commandName = f"Execute {self.cli_name} Command"
+        commandName = f"Execute {self.cli_name} Command and see its output"
         prompt.add_command(
             commandName,
-            "execute_shell_command",
+            "execute_shell_command_with_output",
             {
                 "command": "<command>",
             },
             executeCLICommand
-        )
+        )        
         return prompt
 
     def can_handle_post_prompt(self) -> bool:
